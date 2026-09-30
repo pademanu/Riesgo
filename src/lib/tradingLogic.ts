@@ -1,4 +1,4 @@
-import { Config, Trade, TradeResult, WeekState } from './types';
+import { Config, Trade, TradeResult, WeekState, ChartPoint  } from './types';
 
 /** Crea una semana nueva: separa el pool del capital general. */
 export function createWeek(

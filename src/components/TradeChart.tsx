@@ -15,7 +15,7 @@ export default function TradeChart({ data }: Props) {
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="index" />
           <YAxis />
-          <Tooltip formatter={(v: number) => `$${v.toFixed(2)}`} />
+          <Tooltip formatter={(value) => { if (typeof value === 'number') {return `$${value.toFixed(2)}`;} return value;}} />
           <Line type="stepAfter" dataKey="target" stroke="#9ca3af" strokeDasharray="4 4" dot={false} name="Meta" />
           <Line
             type="monotone"
