@@ -21,11 +21,13 @@ export function createWeek(
       trades: [],
       harvestEvents: [],
       closed: false,
+      bracketHistory: [poolBase],
+      activeLevelIndex: 0,
+      consecutiveLosses: 0,
     },
   };
 }
 
-/** Aplica UN trade a una semana ya existente. No muta: devuelve una semana nueva. */
 export function applyTrade(
   week: WeekState,
   config: Config,
@@ -41,39 +43,49 @@ export function applyTrade(
   let target = week.target;
   let riskActual: number;
   let delta: number;
+  let bracketHistory = [...week.bracketHistory];
+  let activeLevelIndex = week.activeLevelIndex;
+  let consecutiveLosses = week.consecutiveLosses;
+
+  const maxLosses = Math.floor(1 / config.riskPct);
 
   if (result === 'win') {
     delta = config.rr * riskUsed;
     pool += delta;
     riskActual = riskUsed * (config.rr - 1);
+    consecutiveLosses = 0;
   } else {
     delta = -riskUsed;
     pool += delta;
-    riskActual = poolBase * config.riskPct; // vuelve a la unidad base
+    consecutiveLosses += 1;
+
+    // ¿Se "quemó" el bracket activo? Baja un nivel de riesgo, si hay a dónde bajar.
+    if (consecutiveLosses >= maxLosses && activeLevelIndex > 0) {
+      activeLevelIndex -= 1;
+      consecutiveLosses = 0;
+    }
+    riskActual = bracketHistory[activeLevelIndex] * config.riskPct;
   }
 
   const trades: Trade[] = [...week.trades, { result, risk: riskUsed, delta, poolAfter: pool }];
   const harvestEvents = [...week.harvestEvents];
   let harvestedAmount = 0;
 
-  // while, por si un solo trade se pasa de más de una meta de una vez
   while (pool >= target) {
     const excedente = pool - target;
     harvestedAmount += excedente;
     poolBase = target;
     pool = target;
     target = poolBase * 2;
+    bracketHistory = [...bracketHistory, poolBase];
+    activeLevelIndex = bracketHistory.length - 1; // al cosechar, subes al nivel más alto ganado
+    consecutiveLosses = 0;
     riskActual = poolBase * config.riskPct;
-    harvestEvents.push({
-      afterTradeIndex: trades.length - 1,
-      excedente,
-      newPoolBase: poolBase,
-      newTarget: target,
-    });
+    harvestEvents.push({ afterTradeIndex: trades.length - 1, excedente, newPoolBase: poolBase, newTarget: target });
   }
 
   return {
-    week: { ...week, pool, poolBase, target, riskActual, trades, harvestEvents },
+    week: { ...week, pool, poolBase, target, riskActual, trades, harvestEvents, bracketHistory, activeLevelIndex, consecutiveLosses },
     harvestedAmount,
   };
 }
@@ -86,16 +98,19 @@ export function rebuildWeek(
   weekLabel: string,
   results: TradeResult[]
 ): { week: WeekState; totalHarvested: number } {
-  let week: WeekState = {
-    weekLabel,
-    poolBase: poolBaseInitial,
-    pool: poolBaseInitial,
-    target: poolBaseInitial * 2,
-    riskActual: poolBaseInitial * config.riskPct,
-    trades: [],
-    harvestEvents: [],
-    closed: false,
-  };
+let week: WeekState = {
+  weekLabel,
+  poolBase: poolBaseInitial,
+  pool: poolBaseInitial,
+  target: poolBaseInitial * 2,
+  riskActual: poolBaseInitial * config.riskPct,
+  trades: [],
+  harvestEvents: [],
+  closed: false,
+  bracketHistory: [poolBaseInitial],
+  activeLevelIndex: 0,
+  consecutiveLosses: 0,
+};
 
   let totalHarvested = 0;
   for (const result of results) {
@@ -129,4 +144,17 @@ export function buildChartData(poolBaseInitial: number, week: WeekState): ChartP
   });
 
   return points;
+}
+
+/** Simula cuántas victorias consecutivas (desde el estado actual) hacen falta para llegar al target. */
+export function winsUntilTarget(pool: number, riskActual: number, rr: number, target: number): number {
+  let count = 0;
+  let p = pool;
+  let r = riskActual;
+  while (p < target && count < 50) {
+    p += rr * r;
+    r = r * (rr - 1);
+    count++;
+  }
+  return count;
 }

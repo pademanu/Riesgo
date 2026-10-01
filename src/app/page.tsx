@@ -8,6 +8,7 @@ import CapitalOverview from '@/components/CapitalOverview';
 import WeekPanel from '@/components/WeekPanel';
 import WeekHistory from '@/components/WeekHistory';
 import CapitalAdjuster from '@/components/CapitalAdjuster';
+import BracketStatus from '@/components/BracketStatus'
 
 const STORAGE_KEY = 'riesgo-trading-state';
 
@@ -126,30 +127,47 @@ export default function Home() {
 
   if (!loaded) return <p>Cargando...</p>;
 
-  return (
-    <main className="max-w-2xl mx-auto p-6">
-      <h1 className="text-2xl font-bold mb-4">Sistema de riesgo en trading</h1>
+return (
+    <div className="min-h-screen bg-black">
+      <div className="mx-auto max-w-6xl px-4 py-8 grid grid-cols-1 md:grid-cols-[280px_1fr_300px] gap-6 md:gap-0">
 
-      <ConfigForm config={state.config} onChange={(config) => setState({ ...state, config })} />
-      <CapitalAdjuster onAdjust={handleAdjustCapital} />
-      <CapitalOverview capitalGeneral={liveCapitalGeneral} pool={week ? week.pool : 0} />
+        {/* Columna izquierda */}
+        <aside className="md:border-r md:border-black md:pr-6 space-y-4">
+          <CapitalOverview capitalGeneral={liveCapitalGeneral} pool={week ? week.pool : 0} />
+          <CapitalAdjuster onAdjust={handleAdjustCapital} />
+        </aside>
 
-      {!week ? (
-        <button onClick={handleCreateWeek} className="bg-black text-white px-4 py-2 rounded">
-          Crear lista de la semana
-        </button>
-      ) : (
-        <WeekPanel
-          week={week}
-          rr={state.weekConfig!.rr}
-          chartData={chartData}
-          onTrade={handleTrade}
-          onDeleteTrade={handleDeleteTrade}
-          onCloseWeek={handleCloseWeek}
-        />
-      )}
+        {/* Columna central, ancho controlado */}
+        <main className="md:border-r md:border-black md:px-6">
+          <h1 className="text-2xl font-bold text-center mb-6">Sistema de riesgo en trading</h1>
 
-      <WeekHistory history={state.history} onDelete={handleDeleteHistoryWeek} />
-    </main>
+          {!week ? (
+            <div className="flex justify-center">
+              <button onClick={handleCreateWeek} className="bg-black text-white px-4 py-2 rounded">
+                Crear lista de la semana
+              </button>
+            </div>
+          ) : (
+            <WeekPanel
+              week={week}
+              rr={state.weekConfig!.rr}
+              chartData={chartData}
+              onTrade={handleTrade}
+              onDeleteTrade={handleDeleteTrade}
+              onCloseWeek={handleCloseWeek}
+            />
+          )}
+
+          <WeekHistory history={state.history} onDelete={handleDeleteHistoryWeek} />
+        </main>
+
+        {/* Columna derecha */}
+        <aside className="md:pl-6 space-y-4">
+          <ConfigForm config={state.config} onChange={(config) => setState({ ...state, config })} />
+          {week && <BracketStatus week={week} config={state.weekConfig!} />}
+        </aside>
+
+      </div>
+    </div>
   );
 }

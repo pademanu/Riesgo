@@ -29,6 +29,9 @@ export interface WeekState {
   trades: Trade[];
   harvestEvents: HarvestEvent[];
   closed: boolean;
+  bracketHistory: number[];   // nuevo: poolBase de cada bracket alcanzado esta semana
+  activeLevelIndex: number;   // nuevo: qué bracket del historial se usa ahora mismo
+  consecutiveLosses: number;  // nuevo: pérdidas seguidas en el bracket actual
 }
 
 export interface ChartPoint {
