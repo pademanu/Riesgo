@@ -38,7 +38,7 @@ export default function CapitalAdjuster({ onAdjust }: Props) {
           type="number"
           value={amount}
           onChange={(e) => setAmount(e.target.value)}
-          className="border rounded px-3 py-1.5 w-full max-w-[140px] text-black font-semibold"
+          className="border rounded px-3 py-1.5 w-full max-w-35 text-black font-semibold"
           placeholder="0.00"
           autoFocus
         />
