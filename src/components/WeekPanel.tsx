@@ -1,5 +1,9 @@
-import { WeekState, ChartPoint, TradeResult, Config } from '@/lib/types';
+'use client';
+
+import { useState } from 'react';
+import { WeekState, ChartPoint, TradeResult } from '@/lib/types';
 import NextTradePreview from './NextTradePreview';
+import PartialTradeForm from './PartialTradeForm';
 import TradeChart from './TradeChart';
 import TradesTable from './TradesTable';
 
@@ -13,6 +17,8 @@ interface Props {
 }
 
 export default function WeekPanel({ week, rr, chartData, onTrade, onDeleteTrade, onCloseWeek }: Props) {
+  const [showPartial, setShowPartial] = useState(false);
+
   return (
     <>
       <h2 className="text-lg font-semibold">{week.weekLabel}</h2>
@@ -23,17 +29,32 @@ export default function WeekPanel({ week, rr, chartData, onTrade, onDeleteTrade,
       <NextTradePreview riskActual={week.riskActual} rr={rr} />
       <TradeChart data={chartData} />
 
-      <div className="flex gap-2 my-4">
-        <button onClick={() => onTrade('win')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-1.5 rounded text-sm cursor-pointer transition-colors">
+      <div className="flex flex-wrap gap-2 my-4">
+        <button onClick={() => onTrade('win')} className="bg-emerald-600 hover:bg-emerald-700 text-white px-2 py-1 rounded text-sm cursor-pointer transition-colors">
           Trade ganado
         </button>
-        <button onClick={() => onTrade('loss')} className="bg-red-600 hover:bg-red-700 text-white px-4 py-1.5 rounded text-sm cursor-pointer transition-colors">
+        <button onClick={() => setShowPartial(true)} className="bg-amber-600 hover:bg-amber-700 text-white px-2 py-1 rounded text-sm cursor-pointer transition-colors">
+          Trade parcial
+        </button>
+        <button onClick={() => onTrade('loss')} className="bg-red-600 hover:bg-red-700 text-white px-2 py-1 rounded text-sm cursor-pointer transition-colors">
           Trade perdido
         </button>
-        <button onClick={onCloseWeek} className="hover:text-gray-400 border px-3 py-1.5 rounded ml-auto cursor-pointer">
+        <button onClick={onCloseWeek} className="hover:text-gray-400 border px-2 py-1 rounded ml-auto cursor-pointer">
           Cerrar semana
         </button>
       </div>
+
+      {showPartial && (
+        <PartialTradeForm
+          maxRR={rr}
+          riskActual={week.riskActual}
+          onSubmit={(partialRR) => {
+            onTrade({ type: 'partial', rr: partialRR });
+            setShowPartial(false);
+          }}
+          onCancel={() => setShowPartial(false)}
+        />
+      )}
 
       <TradesTable trades={week.trades} onDelete={onDeleteTrade} />
     </>

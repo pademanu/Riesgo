@@ -13,10 +13,10 @@ export default function BracketStatus({ week, config }: Props) {
   const isBurned = week.activeLevelIndex < week.bracketHistory.length - 1;
 
   const activeBracketTarget = week.bracketHistory[week.activeLevelIndex] * 2;
-  const winsToDoubleActive = winsUntilTarget(week.pool, week.riskActual, config.rr, activeBracketTarget);
-  const winsToDoubleHighest = winsUntilTarget(week.pool, week.riskActual, config.rr, week.target);
+  const winsToDoubleActive = winsUntilTarget(week.progressPool, week.riskActual, config.rr, activeBracketTarget);
+  const winsToDoubleHighest = winsUntilTarget(week.progressPool, week.riskActual, config.rr, week.target);
   const lossesLeft = maxLosses - week.consecutiveLosses;
-
+  
   let message: React.ReactNode;
 
   if (isTopBracket) {

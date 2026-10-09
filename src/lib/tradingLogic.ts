@@ -16,6 +16,7 @@ export function createWeek(
       weekLabel,
       poolBase,
       pool: poolBase,
+      progressPool: poolBase,
       target,
       riskActual,
       trades: [],
@@ -39,6 +40,7 @@ export function applyTrade(
 
   const riskUsed = week.riskActual;
   let pool = week.pool;
+  let progressPool = week.progressPool;
   let poolBase = week.poolBase;
   let target = week.target;
   let riskActual: number;
@@ -49,25 +51,42 @@ export function applyTrade(
 
   const maxLosses = Math.floor(1 / config.riskPct);
 
-  if (result === 'win') {
-    delta = config.rr * riskUsed;
-    pool += delta;
-    riskActual = riskUsed * (config.rr - 1);
-    consecutiveLosses = 0;
-  } else {
+  if (result === 'loss') {
     delta = -riskUsed;
     pool += delta;
+    progressPool += delta;
     consecutiveLosses += 1;
 
-    // ¿Se "quemó" el bracket activo? Baja un nivel de riesgo, si hay a dónde bajar.
     if (consecutiveLosses >= maxLosses && activeLevelIndex > 0) {
       activeLevelIndex -= 1;
       consecutiveLosses = 0;
     }
     riskActual = bracketHistory[activeLevelIndex] * config.riskPct;
+  } else if (result === 'win') {
+    delta = config.rr * riskUsed;
+    pool += delta;
+    progressPool += delta;
+    riskActual = riskUsed * (config.rr - 1);
+    consecutiveLosses = 0;
+  } else {
+    // Parcial: el dinero es real, pero el progreso no avanza.
+    delta = result.rr * riskUsed;
+    pool += delta;
+    // progressPool y riskActual NO cambian: hay que repetir el mismo paso
+    riskActual = riskUsed;
+    consecutiveLosses = 0;
   }
 
-  const trades: Trade[] = [...week.trades, { result, risk: riskUsed, delta, poolAfter: pool }];
+  const trades: Trade[] = [
+    ...week.trades,
+    {
+      result: typeof result === 'string' ? result : 'partial',
+      rrAchieved: typeof result === 'string' ? undefined : result.rr,
+      risk: riskUsed,
+      delta,
+      poolAfter: pool,
+    },
+  ];
   const harvestEvents = [...week.harvestEvents];
   let harvestedAmount = 0;
 
@@ -76,16 +95,20 @@ export function applyTrade(
     harvestedAmount += excedente;
     poolBase = target;
     pool = target;
+    progressPool = target; // el nuevo bracket arranca limpio
     target = poolBase * 2;
     bracketHistory = [...bracketHistory, poolBase];
-    activeLevelIndex = bracketHistory.length - 1; // al cosechar, subes al nivel más alto ganado
+    activeLevelIndex = bracketHistory.length - 1;
     consecutiveLosses = 0;
     riskActual = poolBase * config.riskPct;
     harvestEvents.push({ afterTradeIndex: trades.length - 1, excedente, newPoolBase: poolBase, newTarget: target });
   }
 
   return {
-    week: { ...week, pool, poolBase, target, riskActual, trades, harvestEvents, bracketHistory, activeLevelIndex, consecutiveLosses },
+    week: {
+      ...week, pool, progressPool, poolBase, target, riskActual, trades,
+      harvestEvents, bracketHistory, activeLevelIndex, consecutiveLosses,
+    },
     harvestedAmount,
   };
 }
@@ -99,6 +122,7 @@ export function rebuildWeek(
   results: TradeResult[]
 ): { week: WeekState; totalHarvested: number } {
 let week: WeekState = {
+  progressPool: poolBaseInitial,
   weekLabel,
   poolBase: poolBaseInitial,
   pool: poolBaseInitial,
@@ -157,4 +181,40 @@ export function winsUntilTarget(pool: number, riskActual: number, rr: number, ta
     count++;
   }
   return count;
+}
+
+export interface SetupPreview {
+  surplusPctOfBase: number; // sobrante como % del pool base del bracket
+  winsToDouble: number | null; // null = no se alcanza la meta en el límite de simulación
+  lossesToBurn: number;
+  surplus: number;             // sobrante del primer bracket, en dólares
+  surplusPctOfCapital: number;
+}
+
+/** Simula el mejor escenario (puros ganados completos) para un set up, sin crear semana. */
+export function previewSetup(config: Config, capital: number): SetupPreview | null {
+  const poolBase = capital * config.poolAllocPct;
+  if (poolBase <= 0 || config.riskPct <= 0 || config.riskPct > 1 || config.rr <= 1) return null;
+
+  const target = poolBase * 2;
+  let pool = poolBase;
+  let risk = poolBase * config.riskPct;
+  let wins = 0;
+
+  while (pool < target && wins < 50) {
+    pool += config.rr * risk;
+    risk = risk * (config.rr - 1);
+    wins++;
+  }
+
+  const reached = pool >= target;
+  const surplus = reached ? pool - target : 0;
+
+  return {
+    winsToDouble: reached ? wins : null,
+    lossesToBurn: Math.floor(1 / config.riskPct), // misma regla que usa applyTrade
+    surplus,
+    surplusPctOfCapital: capital > 0 ? (surplus / capital) * 100 : 0,
+    surplusPctOfBase: poolBase > 0 ? (surplus / poolBase) * 100 : 0,
+  };
 }

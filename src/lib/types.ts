@@ -4,10 +4,11 @@ export interface Config {
   rr: number;           // relación riesgo/beneficio, el "X" de 1:X (ej. 3)
 }
 
-export type TradeResult = 'win' | 'loss';
+export type TradeResult = 'win' | 'loss' | { type: 'partial'; rr: number };
 
 export interface Trade {
-  result: TradeResult;
+  result: 'win' | 'loss' | 'partial';
+  rrAchieved?: number; // solo existe en los parciales
   risk: number;      // cuánto se arriesgó en este trade
   delta: number;      // ganancia (positivo) o pérdida (negativo) resultante
   poolAfter: number;   // valor del pool inmediatamente después de este trade
@@ -21,6 +22,7 @@ export interface HarvestEvent {
 }
 
 export interface WeekState {
+  progressPool: number; // pool "fantasma": ignora la ganancia de los parciales
   weekLabel: string;
   poolBase: number;
   pool: number;

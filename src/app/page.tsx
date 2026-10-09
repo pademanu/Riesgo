@@ -9,6 +9,7 @@ import WeekPanel from '@/components/WeekPanel';
 import WeekHistory from '@/components/WeekHistory';
 import CapitalAdjuster from '@/components/CapitalAdjuster';
 import BracketStatus from '@/components/BracketStatus'
+import SetupPreview from '@/components/SetupPreview';
 
 const STORAGE_KEY = 'riesgo-trading-state';
 
@@ -143,7 +144,7 @@ return (
 
           {!week ? (
             <div className="flex justify-center">
-              <button onClick={handleCreateWeek} className="bg-black text-white px-4 py-2 rounded">
+              <button onClick={handleCreateWeek} className="hover:text-gray-400 border px-2 py-1 rounded cursor-pointer">
                 Crear lista de la semana
               </button>
             </div>
@@ -164,7 +165,11 @@ return (
         {/* Columna derecha */}
         <aside className="md:pl-6 space-y-4">
           <ConfigForm config={state.config} onChange={(config) => setState({ ...state, config })} />
-          {week && <BracketStatus week={week} config={state.weekConfig!} />}
+          {week ? (
+            <BracketStatus week={week} config={state.weekConfig!} />
+          ) : (
+            <SetupPreview config={state.config} capital={liveCapitalGeneral} />
+          )}
         </aside>
 
       </div>

@@ -12,10 +12,11 @@ export default function WeekHistory({ history, onDelete }: Props) {
     <section className="mt-8 border-t pt-4">
       <h2 className="text-lg font-semibold mb-2">Historial de semanas</h2>
       {history.map((h) => {
+        const partialCount = h.results.filter((r) => typeof r !== 'string').length;
         const winCount = h.results.filter((r) => r === 'win').length;
         const lossCount = h.results.filter((r) => r === 'loss').length;
-        const totalTrades = winCount + lossCount;
-        const winRate = totalTrades > 0 ? (winCount / totalTrades) * 100 : 0;
+        const totalTrades = winCount + lossCount + partialCount;
+        const winRate = totalTrades > 0 ? ((winCount + partialCount) / totalTrades) * 100 : 0;
         return (
           <div key={h.id} className="flex justify-between items-center bg-gray-50 border rounded-lg p-3 mb-2">
             <div>

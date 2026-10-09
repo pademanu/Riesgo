@@ -22,8 +22,18 @@ export default function TradesTable({ trades, onDelete }: Props) {
         {trades.map((t, i) => (
           <tr key={i} className="border-b">
             <td className="py-1">{i + 1}</td>
-            <td className={t.result === 'win' ? 'text-emerald-600' : 'text-red-600'}>
-              {t.result === 'win' ? 'Ganado' : 'Perdido'}
+            <td className={
+              t.result === 'loss' 
+                ? 'text-red-600' 
+                : t.result === 'partial' 
+                  ? 'text-yellow-500'   // o 'text-amber-500' / 'text-yellow-600'
+                  : 'text-emerald-600'
+            }>
+              {t.result === 'win' 
+                ? 'Ganado' 
+                : t.result === 'loss' 
+                  ? 'Perdido' 
+                  : `Parcial (${t.rrAchieved}R)`}
             </td>
             <td>${t.risk.toFixed(2)}</td>
             <td className={t.delta >= 0 ? 'text-emerald-600' : 'text-red-600'}>
