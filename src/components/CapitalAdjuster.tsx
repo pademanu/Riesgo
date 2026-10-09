@@ -22,7 +22,7 @@ export default function CapitalAdjuster({ onAdjust }: Props) {
     return (
       <button
         onClick={() => setOpen(true)}
-        className="border px-3 py-1.5 rounded ml-auto cursor-pointer"
+        className="hover:text-gray-400 border px-2 py-1 rounded cursor-pointer"
       >
         Depositar o retirar capital
       </button>
