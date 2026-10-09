@@ -20,10 +20,10 @@ export default function SetupPreview({ config, capital }: Props) {
       ) : (
         <>
           <p>
-            Con estos ajustes te tomarían <b>{p.winsToDouble}</b>{' '}
+            Con estos ajustes te tomaría{p.winsToDouble === 1 ? '' : 'n'} <b>{p.winsToDouble}</b>{' '}
             {p.winsToDouble === 1 ? 'trade ganador' : 'trades ganadores'} para duplicar un bracket y{' '}
             <b>{p.lossesToBurn}</b>{' '}
-            {p.lossesToBurn === 1 ? 'trade perdedor' : 'trades perdedores'} seguidos para quemarlo.
+            {p.lossesToBurn === 1 ? 'trade perdedor' : 'trades perdedores seguidos'} para quemarlo.
           </p>
           {p.surplus > 0.005 && (
             <p>
