@@ -22,7 +22,7 @@ export default function WeekHistory({ history, onDelete }: Props) {
             <div>
               <p className="font-semibold text-black">{h.weekLabel}</p>
               <p className="text-xs text-gray-500 mt-0.5">
-                {winCount}G / {lossCount}P · win rate {winRate.toFixed(0)}% · pool base ${h.poolBaseInitial.toFixed(2)} ·
+                {winCount+partialCount}G / {lossCount}P · win rate {winRate.toFixed(0)}% · pool base ${h.poolBaseInitial.toFixed(2)} ·
                 RR 1:{h.config.rr} · riesgo {(h.config.riskPct * 100).toFixed(0)}%
               </p>
             </div>
