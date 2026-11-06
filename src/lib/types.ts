@@ -15,25 +15,24 @@ export interface Trade {
 }
 
 export interface HarvestEvent {
-  afterTradeIndex: number; // índice del trade que disparó la cosecha
-  excedente: number;        // lo que se envió al capital general
-  newPoolBase: number;      // nueva base del pool tras la cosecha
-  newTarget: number;        // nueva meta (2x la nueva base)
+  afterTradeIndex: number;
+  kind: 'bracket' | 'recovery'; // cosecha por duplicar, o por recuperar el pool
+  excedente: number;
+  newPoolBase: number;
+  newTarget: number;
 }
 
 export interface WeekState {
-  progressPool: number; // pool "fantasma": ignora la ganancia de los parciales
   weekLabel: string;
-  poolBase: number;
+  poolBase: number;          // base del pool más alto alcanzado esta semana
   pool: number;
   target: number;
   riskActual: number;
   trades: Trade[];
   harvestEvents: HarvestEvent[];
   closed: boolean;
-  bracketHistory: number[];   // nuevo: poolBase de cada bracket alcanzado esta semana
-  activeLevelIndex: number;   // nuevo: qué bracket del historial se usa ahora mismo
-  consecutiveLosses: number;  // nuevo: pérdidas seguidas en el bracket actual
+  bracketHistory: number[];  // bases de los pools alcanzados: la "escalera"
+  streakProfit: number;      // ganancia desde la última pérdida (se usa en recuperación)
 }
 
 export interface ChartPoint {

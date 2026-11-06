@@ -1,61 +1,59 @@
 import { WeekState, Config } from '@/lib/types';
-import { winsUntilTarget } from '@/lib/tradingLogic';
+import { getWeekStatus } from '@/lib/tradingLogic';
 
 interface Props {
   week: WeekState;
   config: Config;
 }
 
+const money = (n: number) => `$${n.toFixed(2)}`;
+
 export default function BracketStatus({ week, config }: Props) {
-  const maxLosses = Math.floor(1 / config.riskPct);
-  const bracketNumber = week.activeLevelIndex + 1;
-  const isTopBracket = week.activeLevelIndex === 0;
-  const isBurned = week.activeLevelIndex < week.bracketHistory.length - 1;
-
-  const activeBracketTarget = week.bracketHistory[week.activeLevelIndex] * 2;
-  const winsToDoubleActive = winsUntilTarget(week.progressPool, week.riskActual, config.rr, activeBracketTarget);
-  const winsToDoubleHighest = winsUntilTarget(week.progressPool, week.riskActual, config.rr, week.target);
-  const lossesLeft = maxLosses - week.consecutiveLosses;
-  
-  let message: React.ReactNode;
-
-  if (isTopBracket) {
-    // Bracket 1, ya sea porque nunca subiste o porque bajaste hasta el fondo
-    message = (
-      <>
-        Estás en el bracket número <b>1</b>. Te quedan <b>{winsToDoubleActive}</b> acierto
-        {winsToDoubleActive === 1 ? '' : 's'} para duplicar este bracket.
-      </>
-    );
-  } else if (!isBurned) {
-    // Bracket > 1, operando en el nivel más alto que has alcanzado
-    message = (
-      <>
-        Estás en el bracket número <b>{bracketNumber}</b>. Te quedan <b>{winsToDoubleActive}</b> acierto
-        {winsToDoubleActive === 1 ? '' : 's'} para duplicar y <b>{lossesLeft}</b> pérdida
-        {lossesLeft === 1 ? '' : 's'} para bajar de bracket.
-      </>
-    );
-  } else {
-    // Bracket > 1, pero ya quemaste el nivel más alto y bajaste uno (o más)
-    message = (
-      <>
-        Estás en el bracket número <b>{bracketNumber}</b>. Te quedan <b>{winsToDoubleActive}</b> acierto
-        {winsToDoubleActive === 1 ? '' : 's'} para duplicar el bracket actual, <b>{lossesLeft}</b> pérdida
-        {lossesLeft === 1 ? '' : 's'} para bajar de bracket y te quedan <b>{winsToDoubleHighest}</b> acierto
-        {winsToDoubleHighest === 1 ? '' : 's'} para duplicar el último bracket al que llegaste.
-      </>
-    );
-  }
+  const s = getWeekStatus(week, config);
+  const recovering = s.mode === 'recovery';
 
   return (
     <div
-      className={`text-xl rounded-lg p-2 mb-3 border ${
-        isBurned ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-gray-50 border-gray-200 text-gray-600'
+      className={`text-lg rounded-lg p-3 mb-3 border space-y-1 ${
+        recovering ? 'bg-amber-50 border-amber-200 text-amber-800' : 'bg-gray-50 border-gray-200 text-gray-600'
       }`}
     >
-      {isBurned && <span className="mr-1">⚠️</span>}
-      {message}
+      <p>
+        {recovering && <span className="mr-1">⚠️</span>}
+        Pool actual: <b>{money(s.ladderBase)}</b>
+        {s.ladderIndex === 0 && ' (inicial)'} · paso <b>{s.step}</b>
+        {s.amountToNextStep !== null && (
+          <> ({money(s.amountToNextStep)} para el paso {s.step + 1})</>
+        )}{' '}
+        · {recovering ? 'modo recuperación' : 'modo normal'}
+      </p>
+
+      {recovering && (
+        <p>
+          Estás recuperando el pool de <b>{money(week.poolBase)}</b>: cualquier pérdida te devuelve al paso 1 del pool actual.
+        </p>
+      )}
+
+      <p>
+        Te faltan <b>{money(s.amountToNext)}</b> para subir al pool de <b>{money(s.nextGoal)}</b>{' '}
+        {s.winsToNext !== null ? (
+          <>
+            (<b>{s.winsToNext}</b> {s.winsToNext === 1 ? 'trade ganador completo' : 'trades ganadores completos'}).
+          </>
+        ) : (
+          '(más de 60 trades ganadores).'
+        )}
+      </p>
+
+      {s.lowerBase !== null ? (
+        <p>
+          Te queda{s.lossesToDrop === 1 ? '' : 'n'} <b>{s.lossesToDrop ?? '200+'}</b>{' '}
+          {s.lossesToDrop === 1 ? 'pérdida seguida' : 'pérdidas seguidas'} para bajar al pool de{' '}
+          <b>{money(s.lowerBase)}</b> (margen: {money(s.amountToDrop ?? 0)}).
+        </p>
+      ) : (
+        <p>Estás en el pool inicial: no hay un pool más bajo al que caer.</p>
+      )}
     </div>
   );
 }
